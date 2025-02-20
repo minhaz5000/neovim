@@ -12,7 +12,7 @@ done
 OS=$(uname -s)
 ARCH=$(uname -m)
 if [[ $OS == Linux ]]; then
-  sudo apt-get update
+  sudo apt-get update && apt-get upgrade
   sudo apt-get install -y build-essential cmake curl gettext ninja-build
 
   if [[ $CC == clang ]]; then
