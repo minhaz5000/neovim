@@ -1,0 +1,38 @@
+name: Build Neovim Debian Package
+on:
+  push:
+    tags:
+      - "stable" # Runs when the stable tag is pushed
+  workflow_dispatch: # Allows manual triggering
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stable tag
+        uses: actions/checkout@v4
+        with:
+          ref: "stable"
+          fetch-depth: 0 # Ensures full history for tags
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ninja-build gettext cmake unzip curl build-essential
+      - name: Build Neovim
+        run: make CMAKE_BUILD_TYPE=Release
+      - name: Create .deb package using CPack
+        run: cd build && cpack -G DEB
+      - name: Rename package for consistency
+        run: |
+          mv build/nvim-linux-*.deb neovim-stable.deb
+      - name: Upload Debian package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neovim-deb
+          path: neovim-stable.deb
+      - name: Publish to GitHub Releases (on stable tag push)
+        if: github.ref == 'refs/tags/stable'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: neovim-stable.deb
+          tag_name: stable
+          generate_release_notes: true
