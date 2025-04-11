@@ -380,6 +380,7 @@ local extension = {
   dat = detect.dat,
   Dat = detect.dat,
   DAT = detect.dat,
+  dax = 'dax',
   dcd = 'dcd',
   decl = detect.decl,
   dec = detect.decl,
@@ -952,6 +953,7 @@ local extension = {
   ppd = 'ppd',
   it = 'ppwiz',
   ih = 'ppwiz',
+  pq = 'pq',
   action = 'privoxy',
   prg = detect.prg,
   Prg = detect.prg,
@@ -1583,6 +1585,7 @@ local filename = {
   ['.gitattributes'] = 'gitattributes',
   ['.gitignore'] = 'gitignore',
   ['.ignore'] = 'gitignore',
+  ['.containerignore'] = 'gitignore',
   ['.dockerignore'] = 'gitignore',
   ['.fdignore'] = 'gitignore',
   ['.npmignore'] = 'gitignore',
@@ -1727,7 +1730,6 @@ local filename = {
   ['.ondirrc'] = 'ondir',
   opam = 'opam',
   ['opam.locked'] = 'opam',
-  ['pacman.log'] = 'pacmanlog',
   ['/etc/pam.conf'] = 'pamconf',
   ['pam_env.conf'] = 'pamenv',
   ['.pam_environment'] = 'pamenv',
@@ -1864,11 +1866,12 @@ local filename = {
   tidyrc = 'tidy',
   ['.tidyrc'] = 'tidy',
   ['.tmux.conf'] = 'tmux',
+  ['Cargo.lock'] = 'toml',
   ['/.cargo/config'] = 'toml',
+  ['/.cargo/credentials'] = 'toml',
   Pipfile = 'toml',
   ['Gopkg.lock'] = 'toml',
-  ['/.cargo/credentials'] = 'toml',
-  ['Cargo.lock'] = 'toml',
+  ['uv.lock'] = 'toml',
   ['.black'] = 'toml',
   black = detect_line1('tool%.black', 'toml', nil),
   ['trustees.conf'] = 'trustees',
@@ -2261,9 +2264,17 @@ local pattern = {
     ['^named.*%.conf$'] = 'named',
     ['^rndc.*%.conf$'] = 'named',
     ['/openvpn/.*/.*%.conf$'] = 'openvpn',
+    ['/pipewire/.*%.conf$'] = 'spajson',
+    ['/wireplumber/.*%.conf$'] = 'spajson',
     ['/%.ssh/.*%.conf$'] = 'sshconfig',
     ['^%.?tmux.*%.conf$'] = 'tmux',
     ['^%.?tmux.*%.conf'] = { 'tmux', { priority = -1 } },
+    ['/containers/containers%.conf$'] = 'toml',
+    ['/containers/containers%.conf%.d/.*%.conf$'] = 'toml',
+    ['/containers/containers%.conf%.modules/.*%.conf$'] = 'toml',
+    ['/containers/registries%.conf$'] = 'toml',
+    ['/containers/registries%.conf%.d/.*%.conf$'] = 'toml',
+    ['/containers/storage%.conf$'] = 'toml',
     ['/%.config/upstart/.*%.conf$'] = 'upstart',
     ['/%.config/upstart/.*%.override$'] = 'upstart',
     ['/%.init/.*%.conf$'] = 'upstart',
@@ -2415,7 +2426,31 @@ local pattern = {
     ['/boot/grub/menu%.lst$'] = 'grub',
     -- gtkrc* and .gtkrc*
     ['^%.?gtkrc'] = starsetf('gtkrc'),
-    ['^${VIMRUNTIME}/doc/.*%.txt$'] = 'help',
+    ['/doc/.*%.txt$'] = function(_, bufnr)
+      local line = M._getline(bufnr, -1)
+      if
+        M._findany(line, {
+          '^vim:ft=help[:%s]',
+          '^vim:ft=help$',
+          '^vim:filetype=help[:%s]',
+          '^vim:filetype=help$',
+          '^vim:.*[:%s]ft=help[:%s]',
+          '^vim:.*[:%s]ft=help$',
+          '^vim:.*[:%s]filetype=help[:%s]',
+          '^vim:.*[:%s]filetype=help$',
+          '%svim:ft=help[:%s]',
+          '%svim:ft=help$',
+          '%svim:filetype=help[:%s]',
+          '%svim:filetype=help$',
+          '%svim:.*[:%s]ft=help[:%s]',
+          '%svim:.*[:%s]ft=help$',
+          '%svim:.*[:%s]filetype=help[:%s]',
+          '%svim:.*[:%s]filetype=help$',
+        })
+      then
+        return 'help'
+      end
+    end,
     ['^hg%-editor%-.*%.txt$'] = 'hgcommit',
     ['%.html%.m4$'] = 'htmlm4',
     ['^JAM.*%.'] = starsetf('jam'),
@@ -2444,6 +2479,9 @@ local pattern = {
     ['/octave/history$'] = 'octave',
     ['%.opam%.locked$'] = 'opam',
     ['%.opam%.template$'] = 'opam',
+    ['^pacman%.log'] = starsetf(function(path, bufnr)
+      return vim.uv.fs_stat(path) and 'pacmanlog' or nil
+    end),
     ['printcap'] = starsetf(function(path, bufnr)
       return require('vim.filetype.detect').printcap('print')
     end),
@@ -2549,6 +2587,15 @@ local function normalize_path(path, as_pattern)
     end
   end
   return normal
+end
+
+local abspath = function(x)
+  return fn.fnamemodify(x, ':p')
+end
+if fn.has('win32') == 1 then
+  abspath = function(x)
+    return (fn.fnamemodify(x, ':p'):gsub('\\', '/'))
+  end
 end
 
 --- @class vim.filetype.add.filetypes
@@ -2859,7 +2906,7 @@ function M.match(args)
     name = normalize_path(name)
 
     -- First check for the simple case where the full path exists as a key
-    local path = fn.fnamemodify(name, ':p')
+    local path = abspath(name)
     ft, on_detect = dispatch(filename[path], path, bufnr)
     if ft then
       return ft, on_detect

@@ -3529,7 +3529,7 @@ describe('LSP', function()
       )
     end)
 
-    it('considers title when computing width', function()
+    it('considers string title when computing width', function()
       eq(
         { 17, 2 },
         exec_lua(function()
@@ -3537,6 +3537,20 @@ describe('LSP', function()
             vim.lsp.util._make_floating_popup_size(
               { 'foo', 'bar' },
               { title = 'A very long title' }
+            ),
+          }
+        end)
+      )
+    end)
+
+    it('considers [string,string][] title when computing width', function()
+      eq(
+        { 17, 2 },
+        exec_lua(function()
+          return {
+            vim.lsp.util._make_floating_popup_size(
+              { 'foo', 'bar' },
+              { title = { { 'A very ', 'Normal' }, { 'long title', 'Normal' } } }
             ),
           }
         end)
@@ -6348,7 +6362,8 @@ describe('LSP', function()
         vim.lsp.config('foo', {
           cmd = server.cmd,
           filetypes = { 'foo' },
-          root_dir = function(cb)
+          root_dir = function(bufnr, cb)
+            assert(tmp1 == vim.api.nvim_buf_get_name(bufnr))
             vim.system({ 'sleep', '0' }, {}, function()
               cb('some_dir')
             end)
@@ -6367,6 +6382,102 @@ describe('LSP', function()
             return vim.lsp.get_clients({ bufnr = vim.api.nvim_get_current_buf() })[1].root_dir
           end)
         )
+      end)
+    end)
+
+    it('validates config on attach', function()
+      local tmp1 = t.tmpname(true)
+      exec_lua(function()
+        vim.lsp.log._set_filename(fake_lsp_logfile)
+      end)
+
+      local function test_cfg(cfg, err)
+        exec_lua(function()
+          vim.lsp.config['foo'] = {}
+          vim.lsp.config('foo', cfg)
+          vim.lsp.enable('foo')
+          vim.cmd.edit(assert(tmp1))
+          vim.bo.filetype = 'foo'
+        end)
+
+        retry(nil, 1000, function()
+          assert_log(err, fake_lsp_logfile)
+        end)
+      end
+
+      test_cfg({
+        cmd = { 'lolling' },
+      }, 'cannot start foo due to config error: .* lolling is not executable')
+
+      test_cfg({
+        cmd = { 'cat' },
+        filetypes = true,
+      }, 'cannot start foo due to config error: .* filetypes: expected table, got boolean')
+    end)
+
+    it('does not start without workspace if workspace_required=true', function()
+      exec_lua(create_server_definition)
+
+      local tmp1 = t.tmpname(true)
+
+      eq(
+        { workspace_required = false },
+        exec_lua(function()
+          local server = _G._create_server({
+            handlers = {
+              initialize = function(_, _, callback)
+                callback(nil, { capabilities = {} })
+              end,
+            },
+          })
+
+          local ws_required = { cmd = server.cmd, workspace_required = true, filetypes = { 'foo' } }
+          local ws_not_required = vim.deepcopy(ws_required)
+          ws_not_required.workspace_required = false
+
+          vim.lsp.config('ws_required', ws_required)
+          vim.lsp.config('ws_not_required', ws_not_required)
+          vim.lsp.enable('ws_required')
+          vim.lsp.enable('ws_not_required')
+
+          vim.cmd.edit(assert(tmp1))
+          vim.bo.filetype = 'foo'
+
+          local clients = vim.lsp.get_clients({ bufnr = vim.api.nvim_get_current_buf() })
+          assert(1 == #clients)
+          return { workspace_required = clients[1].config.workspace_required }
+        end)
+      )
+    end)
+
+    it('does not allow wildcards in config name', function()
+      local err =
+        '.../lsp.lua:0: name: expected non%-wildcard string, got foo%*%. Info: LSP config name cannot contain wildcard %("%*"%)'
+
+      matches(
+        err,
+        pcall_err(exec_lua, function()
+          local _ = vim.lsp.config['foo*']
+        end)
+      )
+
+      matches(
+        err,
+        pcall_err(exec_lua, function()
+          vim.lsp.config['foo*'] = {}
+        end)
+      )
+
+      matches(
+        err,
+        pcall_err(exec_lua, function()
+          vim.lsp.config('foo*', {})
+        end)
+      )
+
+      -- Exception for '*'
+      pcall(exec_lua, function()
+        vim.lsp.config('*', {})
       end)
     end)
   end)
