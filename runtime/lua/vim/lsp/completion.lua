@@ -571,7 +571,10 @@ local function on_insert_char_pre(handle)
 
   local char = api.nvim_get_vvar('char')
   local matched_clients = handle.triggers[char]
-  if not completion_timer and matched_clients then
+  -- Discard pending trigger char, complete the "latest" one.
+  -- Can happen if a mapping inputs multiple trigger chars simultaneously.
+  reset_timer()
+  if matched_clients then
     completion_timer = assert(vim.uv.new_timer())
     completion_timer:start(25, 0, function()
       reset_timer()
@@ -864,7 +867,7 @@ end
 --- - findstart=0: column where the completion starts, or -2 or -3
 --- - findstart=1: list of matches (actually just calls |complete()|)
 function M._omnifunc(findstart, base)
-  vim.lsp.log.debug('omnifunc.findstart', { findstart = findstart, base = base })
+  lsp.log.debug('omnifunc.findstart', { findstart = findstart, base = base })
   assert(base) -- silence luals
   local bufnr = api.nvim_get_current_buf()
   local clients = lsp.get_clients({ bufnr = bufnr, method = ms.textDocument_completion })

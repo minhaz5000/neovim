@@ -65,6 +65,7 @@
 #include "nvim/plines.h"
 #include "nvim/popupmenu.h"
 #include "nvim/pos_defs.h"
+#include "nvim/register.h"
 #include "nvim/search.h"
 #include "nvim/state.h"
 #include "nvim/state_defs.h"
@@ -605,7 +606,11 @@ static int insert_execute(VimState *state, int key)
                && (s->c == CAR || s->c == K_KENTER || s->c == NL)))
           && stop_arrow() == OK) {
         ins_compl_delete(false);
-        ins_compl_insert(false);
+        if (ins_compl_has_preinsert() && ins_compl_autocomplete_enabled()) {
+          (void)ins_compl_insert(false, true);
+        } else {
+          (void)ins_compl_insert(false, false);
+        }
       } else if (ascii_iswhite_nl_or_nul(s->c) && ins_compl_preinsert_effect()) {
         // Delete preinserted text when typing special chars
         ins_compl_delete(false);
@@ -847,7 +852,8 @@ static int insert_handle_key(InsertState *s)
   case Ctrl_H:
     s->did_backspace = ins_bs(s->c, BACKSPACE_CHAR, &s->inserted_space);
     auto_format(false, true);
-    if (s->did_backspace && p_ac && !char_avail() && curwin->w_cursor.col > 0) {
+    if (s->did_backspace && ins_compl_has_autocomplete() && !char_avail()
+        && curwin->w_cursor.col > 0) {
       s->c = char_before_cursor();
       if (vim_isprintc(s->c)) {
         redraw_later(curwin, UPD_VALID);
@@ -1234,7 +1240,7 @@ normalchar:
     // closed fold.
     foldOpenCursor();
     // Trigger autocompletion
-    if (p_ac && !char_avail() && vim_isprintc(s->c)) {
+    if (ins_compl_has_autocomplete() && !char_avail() && vim_isprintc(s->c)) {
       redraw_later(curwin, UPD_VALID);
       update_screen();  // Show character immediately
       ui_flush();
@@ -2854,6 +2860,8 @@ static void ins_reg(void)
     vim_beep(kOptBoFlagRegister);
     need_redraw = true;  // remove the '"'
   } else {
+    yankreg_T *reg = get_yank_register(regname, YREG_PASTE);
+
     if (literally == Ctrl_O || literally == Ctrl_P) {
       // Append the command to the redo buffer.
       AppendCharToRedobuff(Ctrl_R);
@@ -2862,7 +2870,11 @@ static void ins_reg(void)
 
       do_put(regname, NULL, BACKWARD, 1,
              (literally == Ctrl_P ? PUT_FIXINDENT : 0) | PUT_CURSEND);
-    } else if (insert_reg(regname, NULL, literally) == FAIL) {
+    } else if (reg->y_size > 1 && is_literal_register(regname)) {
+      AppendCharToRedobuff(Ctrl_R);
+      AppendCharToRedobuff(regname);
+      do_put(regname, NULL, BACKWARD, 1, PUT_CURSEND);
+    } else if (insert_reg(regname, NULL, !!literally) == FAIL) {
       vim_beep(kOptBoFlagRegister);
       need_redraw = true;  // remove the '"'
     } else if (stop_insert_mode) {

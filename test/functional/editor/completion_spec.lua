@@ -26,6 +26,7 @@ describe('completion', function()
     screen:add_extra_attr_ids {
       [100] = { foreground = Screen.colors.Gray0, background = Screen.colors.Yellow },
       [101] = { background = Screen.colors.Gray0 },
+      [102] = { foreground = Screen.colors.SeaGreen },
     }
   end)
 
@@ -1412,11 +1413,11 @@ describe('completion', function()
 
   -- oldtest: Test_autocompletedelay()
   it("'autocompletedelay' option", function()
+    screen:try_resize(60, 10)
     source([[
       call setline(1, ['foo', 'foobar', 'foobarbaz'])
-      set autocomplete
+      setlocal autocomplete
     ]])
-    screen:try_resize(60, 10)
     screen:expect([[
       ^foo                                                         |
       foobar                                                      |
@@ -1424,7 +1425,7 @@ describe('completion', function()
       {1:~                                                           }|*6
                                                                   |
     ]])
-    screen.timeout = 200
+    screen.timeout = 400
 
     feed('Gof')
     screen:expect([[
@@ -1501,7 +1502,7 @@ describe('completion', function()
       foo                                                         |
       foobar                                                      |
       foobarbaz                                                   |
-      f^oo                                                         |
+      f{102:^oo}                                                         |
       {12:foo            }{1:                                             }|
       {4:foobar         }{1:                                             }|
       {4:foobarbaz      }{1:                                             }|
@@ -1522,6 +1523,17 @@ describe('completion', function()
       {5:-- INSERT --}                                                |
     ]])
     vim.uv.sleep(500)
+    screen:expect([[
+      foo                                                         |
+      foobar                                                      |
+      foobarbaz                                                   |
+      f^                                                           |
+      {4:foobarbaz      }{1:                                             }|
+      {4:foobar         }{1:                                             }|
+      {4:foo            }{1:                                             }|
+      {1:~                                                           }|*2
+      {5:-- INSERT --}                                                |
+    ]])
     feed('<C-N>')
     screen:expect([[
       foo                                                         |
@@ -1557,9 +1569,69 @@ describe('completion', function()
       {1:~                                                           }|*5
       {5:-- INSERT --}                                                |
     ]])
+    feed('<Up>')
+    screen:expect([[
+      foo                                                         |
+      foobar                                                      |
+      f^oobarbaz                                                   |
+      f                                                           |
+      {1:~                                                           }|*5
+      {5:-- INSERT --}                                                |
+    ]])
     feed('<Down>')
-    screen:expect_unchanged()
+    screen:expect([[
+      foo                                                         |
+      foobar                                                      |
+      foobarbaz                                                   |
+      f^                                                           |
+      {1:~                                                           }|*5
+      {5:-- INSERT --}                                                |
+    ]])
 
     feed('<esc>')
+  end)
+
+  it([[first item isn't selected with "fuzzy" and 'acl']], function()
+    screen:try_resize(60, 10)
+    source([[
+      call setline(1, ["v", "vi", "vim"])
+      set autocomplete completeopt=menuone,noinsert,fuzzy autocompletedelay=300
+    ]])
+
+    feed('Govi')
+    screen:expect([[
+      v                                                           |
+      vi                                                          |
+      vim                                                         |
+      vi^                                                          |
+      {4:vi             }{1:                                             }|
+      {4:vim            }{1:                                             }|
+      {1:~                                                           }|*3
+      {5:-- INSERT --}                                                |
+    ]])
+
+    feed('<Esc>Sv')
+    screen:expect([[
+      v                                                           |
+      vi                                                          |
+      vim                                                         |
+      v^                                                           |
+      {4:v              }{1:                                             }|
+      {4:vi             }{1:                                             }|
+      {4:vim            }{1:                                             }|
+      {1:~                                                           }|*2
+      {5:-- INSERT --}                                                |
+    ]])
+    feed('i')
+    screen:expect([[
+      v                                                           |
+      vi                                                          |
+      vim                                                         |
+      vi^                                                          |
+      {4:vi             }{1:                                             }|
+      {4:vim            }{1:                                             }|
+      {1:~                                                           }|*3
+      {5:-- INSERT --}                                                |
+    ]])
   end)
 end)

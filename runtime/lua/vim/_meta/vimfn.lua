@@ -3075,14 +3075,14 @@ function vim.fn.getcmdscreenpos() end
 --- Returns an empty string otherwise.
 --- Also see |getcmdpos()|, |setcmdpos()| and |getcmdline()|.
 ---
---- @return ':'|'>'|'/'|'?'|'@'|'-'|'='
+--- @return ':'|'>'|'/'|'?'|'@'|'-'|'='|''
 function vim.fn.getcmdtype() end
 
 --- Return the current |command-line-window| type. Possible return
 --- values are the same as |getcmdtype()|. Returns an empty string
 --- when not in the command-line window.
 ---
---- @return ':'|'>'|'/'|'?'|'@'|'-'|'='
+--- @return ':'|'>'|'/'|'?'|'@'|'-'|'='|''
 function vim.fn.getcmdwintype() end
 
 --- Return a list of command-line completion matches. The String
@@ -8631,11 +8631,12 @@ function vim.fn.settagstack(nr, dict, action) end
 function vim.fn.setwinvar(nr, varname, val) end
 
 --- Returns a String with 64 hex characters, which is the SHA256
---- checksum of {string}.
+--- checksum of {expr}.
+--- {expr} is a String or a Blob.
 ---
---- @param string string
+--- @param expr string
 --- @return string
-function vim.fn.sha256(string) end
+function vim.fn.sha256(expr) end
 
 --- Escape {string} for use as a shell command argument.
 ---
@@ -10835,7 +10836,6 @@ function vim.fn.wildmenumode() end
 
 --- Start wildcard expansion in the command-line, using the
 --- behavior defined by the 'wildmode' and 'wildoptions' settings.
---- See |cmdline-completion|.
 ---
 --- This function also enables completion in search patterns such
 --- as |/|, |?|, |:s|, |:g|, |:v| and |:vimgrep|.
@@ -10843,22 +10843,15 @@ function vim.fn.wildmenumode() end
 --- Unlike pressing 'wildchar' manually, this function does not
 --- produce a beep when no matches are found and generally
 --- operates more quietly.  This makes it suitable for triggering
---- completion automatically, such as from an |:autocmd|.
----         *cmdline-autocompletion*
---- Example: To make the completion menu pop up automatically as
---- you type on the command line, use: >vim
----   autocmd CmdlineChanged [:/\?] call wildtrigger()
----   set wildmode=noselect:lastused,full wildoptions=pum
---- <
---- To retain normal history navigation (up/down keys): >vim
----   cnoremap <Up>   <C-U><Up>
----   cnoremap <Down> <C-U><Down>
---- <
---- To set an option specifically when performing a search, e.g.
---- to set 'pumheight': >vim
----   autocmd CmdlineEnter [/\?] set pumheight=8
----   autocmd CmdlineLeave [/\?] set pumheight&
---- <
+--- completion automatically.
+---
+--- Note: After navigating command-line history, the first call to
+--- wildtrigger() is a no-op; a second call is needed to start
+--- expansion.  This is to support history navigation in
+--- command-line autocompletion.
+---
+--- See |cmdline-autocompletion|.
+---
 --- Return value is always 0.
 ---
 --- @return number

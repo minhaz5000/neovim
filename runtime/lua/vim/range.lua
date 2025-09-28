@@ -1,17 +1,11 @@
 ---@brief
 ---
---- WARNING: This module is under experimental support.
---- Its semantics are not yet finalized,
---- and the stability of this API is not guaranteed.
---- Avoid using it outside of Nvim.
---- You may subscribe to or participate in the tracking issue
---- https://github.com/neovim/neovim/issues/25509
+--- EXPERIMENTAL: This API may change in the future. Its semantics are not yet finalized.
+--- Subscribe to https://github.com/neovim/neovim/issues/25509
 --- to stay updated or contribute to its development.
 ---
---- Built on |vim.Range| objects, this module offers operations
---- that support comparisons as well as containment checks
---- (for positions and for other ranges).
---- conversions between various types of ranges is also provided.
+--- Provides operations to compare, calculate, and convert ranges represented by |vim.Range|
+--- objects.
 
 local validate = vim.validate
 
@@ -28,7 +22,7 @@ local validate = vim.validate
 ---
 --- -- Create a range from two positions.
 --- local range1 = vim.range(pos1, pos2)
---- -- Or createa range from four integers representing start and end positions.
+--- -- Or create a range from four integers representing start and end positions.
 --- local range2 = vim.range(3, 5, 4, 0)
 ---
 --- -- Because `vim.Range` is end exclusive, `range1` and `range2` both represent

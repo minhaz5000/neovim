@@ -1272,7 +1272,7 @@ int utf_class_tab(const int c, const uint64_t *const chartab)
     { 0x202f, 0x202f, 0 },
     { 0x2030, 0x205e, 1 },              // punctuation and symbols
     { 0x205f, 0x205f, 0 },
-    { 0x2060, 0x27ff, 1 },              // punctuation and symbols
+    { 0x2060, 0x206f, 1 },              // punctuation and symbols
     { 0x2070, 0x207f, 0x2070 },         // superscript
     { 0x2080, 0x2094, 0x2080 },         // subscript
     { 0x20a0, 0x27ff, 1 },              // all kinds of symbols
@@ -2185,7 +2185,7 @@ void mb_adjust_cursor(void)
 }
 
 /// Checks and adjusts cursor column. Not mode-dependent.
-/// @see check_cursor_col_win
+/// @see check_cursor_col
 ///
 /// @param  win_  Places cursor on a valid column for this window.
 void mb_check_adjust_col(void *win_)

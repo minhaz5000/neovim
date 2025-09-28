@@ -9,7 +9,6 @@ local insert = n.insert
 
 describe('vim.range', function()
   before_each(clear)
-  after_each(clear)
 
   it('creates a range with or without optional fields', function()
     local range = exec_lua(function()
@@ -31,7 +30,7 @@ describe('vim.range', function()
     eq(buf, range.end_.buf)
   end)
 
-  it('create a range from two positions when optional fields are not matched', function()
+  it('creates a range from two positions when optional fields are not matched', function()
     local range = exec_lua(function()
       return vim.range(vim.pos(3, 5), vim.pos(4, 6))
     end)
@@ -62,7 +61,7 @@ describe('vim.range', function()
     eq(success, false)
   end)
 
-  it('supports conversion between vim.Range and lsp.Range', function()
+  it('converts between vim.Range and lsp.Range', function()
     local buf = exec_lua(function()
       return vim.api.nvim_get_current_buf()
     end)

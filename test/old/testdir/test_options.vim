@@ -176,7 +176,7 @@ func Test_signcolumn()
   call assert_equal("auto", &signcolumn)
   set signcolumn=yes
   set signcolumn=no
-  call assert_fails('set signcolumn=nope')
+  call assert_fails('set signcolumn=nope', 'E474: Invalid argument: signcolumn=nope')
 endfunc
 
 func Test_filetype_valid()
@@ -2901,6 +2901,18 @@ func Test_set_missing_options()
   set w300=23
   set w1200=23
   set w9600=23
+endfunc
+
+func Test_showcmd()
+  throw 'Skipped: Nvim does not support support Vi-compatible mode'
+  " in no-cp mode, 'showcmd' is enabled
+  let _cp=&cp
+  call assert_equal(1, &showcmd)
+  set cp
+  call assert_equal(0, &showcmd)
+  set nocp
+  call assert_equal(1, &showcmd)
+  let &cp = _cp
 endfunc
 
 " vim: shiftwidth=2 sts=2 expandtab

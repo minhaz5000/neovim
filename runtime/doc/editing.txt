@@ -214,6 +214,7 @@ If you want to keep the changed buffer without saving it, switch on the
 							*:fin* *:find*
 :fin[d][!] [++opt] [+cmd] {file}
 			Find {file} in 'path' and then |:edit| it.
+			See also: 'findfunc'.
 
 :{count}fin[d][!] [++opt] [+cmd] {file}
 			Just like ":find", but use the {count} match in
@@ -988,7 +989,8 @@ slower (but safer).
 							*:up* *:update*
 :[range]up[date][!] [++opt] [>>] [file]
 			Like ":write", but only write when the buffer has been
-			modified.
+			modified, or when the buffer represents a new file
+			that doesn't exist on disk.
 
 
 WRITING WITH MULTIPLE BUFFERS				*buffer-write*

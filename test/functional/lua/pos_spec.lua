@@ -9,7 +9,6 @@ local insert = n.insert
 
 describe('vim.pos', function()
   before_each(clear)
-  after_each(clear)
 
   it('creates a position with or without optional fields', function()
     local pos = exec_lua(function()
@@ -30,7 +29,7 @@ describe('vim.pos', function()
     eq(buf, pos.buf)
   end)
 
-  it('supports comparisons by overloaded mathmatical operators', function()
+  it('comparisons by overloaded operators', function()
     eq(
       true,
       exec_lua(function()
@@ -69,7 +68,7 @@ describe('vim.pos', function()
     )
   end)
 
-  it('supports conversion between vim.Pos and lsp.Position', function()
+  it('converts between vim.Pos and lsp.Position', function()
     local buf = exec_lua(function()
       return vim.api.nvim_get_current_buf()
     end)
